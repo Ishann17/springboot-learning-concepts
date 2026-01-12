@@ -12,5 +12,5 @@ public interface UserService {
     User createNewUser(User user);
     User getUserById(int id);
     Page<User> searchUserByAge(int minAge, int maxAge, Pageable pageable);
-
+    Page<User> searchUsers(String name, Integer age, String city, String state, Pageable pageable);
 }

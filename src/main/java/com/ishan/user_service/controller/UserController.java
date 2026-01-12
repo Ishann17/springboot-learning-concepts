@@ -56,4 +56,17 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<?> searchUsers(@RequestParam (required = false) String name,
+                                         @RequestParam (required = false) Integer age,
+                                         @RequestParam (required = false) String city,
+                                         @RequestParam (required = false) String state,
+                                         @RequestParam (defaultValue = "0") int page,
+                                         @RequestParam (defaultValue = "10") int size){
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> searchedUsers = userService.searchUsers(name, age, city, state, pageable);
+
+        return ResponseEntity.ok(searchedUsers);
+    }
+
 }
