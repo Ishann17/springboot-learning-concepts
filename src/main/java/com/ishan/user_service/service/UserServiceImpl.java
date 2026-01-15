@@ -33,12 +33,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<User> exportAllUsersToCSV() {
-
+    public String exportAllUsersToCSV(String path) {
         List<User> userList = userRepository.findAll();
-        CSVReadWriteUtility.writeCSV(userList);
-
-        return null;
+        return CSVReadWriteUtility.writeCSV(userList, path);
     }
 
     @Override

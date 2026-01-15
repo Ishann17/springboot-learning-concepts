@@ -70,10 +70,9 @@ public class UserController {
     }
 
     @GetMapping("/exportCSV")
-    public ResponseEntity<?> exportAllUsersToCSV(){
-
-
-        return null;
+    public ResponseEntity<?> exportAllUsersToCSV(@RequestParam(defaultValue = "C:\\Users\\Ishan Raghav\\Downloads") String path){
+        String allUsersToCSV = userService.exportAllUsersToCSV(path);
+        return ResponseEntity.ok(allUsersToCSV);
     }
 
 }
