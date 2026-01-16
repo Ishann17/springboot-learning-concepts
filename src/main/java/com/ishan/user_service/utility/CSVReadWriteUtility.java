@@ -26,12 +26,14 @@ public class CSVReadWriteUtility {
                  writer.append(toCsvRow(user));
                  writer.append(NEW_LINE_SEPARATOR);
              }
-            long endTime = System.currentTimeMillis();
             log.info("CSV Exported Successfully  file name : {} & stored at : {}",csvFileName,csvFilePath);
-            log.info("Total Time Taken to create CSV :: {}", (endTime - startTime)/1000);
-            return "CSV Exported Successfully";
+            return "CSV Exported Successfully at : " + path;
         } catch (IOException e) {
             log.error("Error writing the CSV file: {}", e.getMessage());
+        }finally {
+            long endTime = System.currentTimeMillis();
+            double executionTimeInSeconds = (endTime - startTime) / 1000.0;
+            log.info("CSV Export completed in {} seconds", executionTimeInSeconds);
         }
         return "Issue Exporting CSV";
     }

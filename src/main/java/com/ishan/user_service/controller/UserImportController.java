@@ -7,10 +7,12 @@ import com.ishan.user_service.customExceptions.BatchLimitExceededException;
 import com.ishan.user_service.dto.UserDto;
 import com.ishan.user_service.mapper.UserMapperFromRandomToDto;
 import com.ishan.user_service.model.User;
+import com.ishan.user_service.service.MockUserGeneratorService;
 import com.ishan.user_service.service.RandomUserClientService;
 import com.ishan.user_service.service.UserImportService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,6 +45,8 @@ public class UserImportController {
     // Client service responsible for calling the external API
     private final RandomUserClientService randomUserClientService;
 
+    private final MockUserGeneratorService mockUserGeneratorService;
+
     /**
      * ObjectMapper is used to convert raw JSON text into
      * a navigable JSON tree (JsonNode).
@@ -59,10 +63,12 @@ public class UserImportController {
      * - Avoids field injection pitfalls
      */
     public UserImportController(UserImportService userImportService,
-                                RandomUserClientService randomUserClientService) {
+                                RandomUserClientService randomUserClientService, MockUserGeneratorService mockUserGeneratorService) {
+
         log.info("UserImportController Constructor Called");
         this.userImportService = userImportService;
         this.randomUserClientService = randomUserClientService;
+        this.mockUserGeneratorService = mockUserGeneratorService;
     }
 
     /**
@@ -143,41 +149,75 @@ public class UserImportController {
      */
     @PostMapping("/import/batch")
     public ResponseEntity<?> importMultipleUsersFromExternalSource(@RequestParam(defaultValue = "10") int count) throws JsonProcessingException {
+        long startTime = System.currentTimeMillis();
         log.info("importMultipleUsersFromExternalSource invoked");
         //fall_back mechanism
-        if(count > 5000){
-            log.warn("Batch Limit Exceeded {}, count more than 5000", count);
-            throw new BatchLimitExceededException("Count size cannot be more than 5000");
+        try {
+            if(count > 5000){
+                log.warn("Batch Limit Exceeded {}, count more than 5000", count);
+                throw new BatchLimitExceededException("Count size cannot be more than 5000");
+            }
+
+            // STEP 1: Call external API to fetch 'count' users in ONE request
+            // Example URL generated internally:
+            // https://randomuser.me/api/?results=10&nat=us,ca,au,gb,in
+            String multipleRandomUsersRaw =
+                    randomUserClientService.fetchMultipleRandomUsersRaw(count);
+
+            // STEP 2: Convert raw JSON String into a navigable JSON tree
+            JsonNode navigableTree =
+                    objectMapper.readTree(multipleRandomUsersRaw);
+
+            // STEP 3: Extract the "results" array from the response
+            // This array contains multiple user objects
+            JsonNode rawUsersDataArray =
+                    navigableTree.get("results");
+            log.info("RESULTS SIZE FROM API {}",rawUsersDataArray.size());
+            // STEP 4: Convert JSON array → List<UserDto> using mapper
+            // Mapper is responsible ONLY for data transformation
+            List<UserDto> userDtoList =
+                    UserMapperFromRandomToDto.convertRandomUsersToUserDtoList(rawUsersDataArray);
+            log.info("DTO List SIZE After Conversion {}",userDtoList.size());
+            // STEP 5: Persist all users in a single transaction using saveAll()
+            // If any insert fails, the entire batch is rolled back
+            userImportService.importMultipleUsersFromExternalSource(userDtoList);
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body("Multiple Users " + userDtoList.size() + " total Users added");
+        } finally {
+            long endTime = System.currentTimeMillis();
+            double executionTimeInSeconds = (endTime - startTime) / 1000.0;
+            log.info("importMultipleUsersFromExternalSource completed in {} seconds", executionTimeInSeconds);
         }
 
-        // STEP 1: Call external API to fetch 'count' users in ONE request
-        // Example URL generated internally:
-        // https://randomuser.me/api/?results=10&nat=us,ca,au,gb,in
-        String multipleRandomUsersRaw =
-                randomUserClientService.fetchMultipleRandomUsersRaw(count);
-
-        // STEP 2: Convert raw JSON String into a navigable JSON tree
-        JsonNode navigableTree =
-                objectMapper.readTree(multipleRandomUsersRaw);
-
-        // STEP 3: Extract the "results" array from the response
-        // This array contains multiple user objects
-        JsonNode rawUsersDataArray =
-                navigableTree.get("results");
-        log.info("RESULTS SIZE FROM API {}",rawUsersDataArray.size());
-        // STEP 4: Convert JSON array → List<UserDto> using mapper
-        // Mapper is responsible ONLY for data transformation
-        List<UserDto> userDtoList =
-                UserMapperFromRandomToDto.convertRandomUsersToUserDtoList(rawUsersDataArray);
-        log.info("DTO List SIZE After Conversion {}",userDtoList.size());
-        // STEP 5: Persist all users in a single transaction using saveAll()
-        // If any insert fails, the entire batch is rolled back
-        userImportService.importMultipleUsersFromExternalSource(userDtoList);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body("Multiple Users " + userDtoList.size() + " total Users added");
     }
+
+    @PostMapping("/import/fake")
+    public ResponseEntity<?> importMultipleUsersFakerLibrary(@RequestParam(defaultValue = "10") int count){
+        long startTime = System.currentTimeMillis();
+        log.info("importMultipleUsersFakerLibrary invoked with count: {}", count);
+        try {
+            // STEP 1: Generate fake users using Java Faker
+            List<UserDto> userDtoList = mockUserGeneratorService.generateUsers(count);
+            log.info("Generated {} fake users", userDtoList.size());
+
+            // STEP 2: Save all users to database
+            userImportService.importMultipleUsersWithBatchProcessing(userDtoList);
+            log.info("Successfully saved {} users to database", userDtoList.size());
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body("Successfully imported " + userDtoList.size() + " fake users to database");
+
+        } finally {
+            long endTime = System.currentTimeMillis();
+            double executionTimeInSeconds = (endTime - startTime) / 1000.0;
+            log.info("importMultipleUsersFakerLibrary completed in {} seconds", executionTimeInSeconds);
+        }
+
+    }
+
 
 
 }

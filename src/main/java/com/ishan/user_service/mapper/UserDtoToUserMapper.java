@@ -10,7 +10,8 @@ public class UserDtoToUserMapper {
         user.setAge(userDto.getAge());
         user.setCity(userDto.getCity());
         user.setGender(userDto.getGender());
-        user.setMobileNumber(userDto.getPhNum());
+        String normalizedPhone = userDto.getPhNum().replaceAll("\\D", "");
+        user.setMobileNumber(normalizedPhone);
         user.setState(userDto.getState());
         user.setEmail(userDto.getEmail());
         user.setName(userDto.getFirstName() + " " + userDto.getLastName());
