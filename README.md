@@ -159,7 +159,7 @@ SELECT * FROM user WHERE id > :lastId ORDER BY id ASC LIMIT 1000;
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/spring-boot-user-service.git
+git clone https://github.com/Ishann17/springboot-learning-concepts
 cd spring-boot-user-service
 ```
 
@@ -231,6 +231,24 @@ GET /api/users/search?name=John&city=Austin&minAge=25&maxAge=35
 - Batch insert optimization with `TABLE` generation strategy
 - Query optimization using `Slice` to avoid count queries
 
+📊 Performance Results (Measured on Local Setup)
+
+✅ CSV Export (Streaming + Keyset Pagination)
+Records Exported: 3,000,000 users
+Approach: StreamingResponseBody + BufferedWriter + Keyset Pagination
+Time Taken: ~12 seconds
+RAM Usage: Stable (no major spikes) ✅
+Notes: Excel can’t open full file due to 1,048,576 row limit, file verified using CLI.
+
+✅ Bulk Import (Faker + Batch Insert + Batch Commits)
+Records Imported: 2,000,000 users
+Batch Size: 1000
+Transaction Strategy: REQUIRES_NEW per batch commit
+DB Insert Time: ~281 seconds
+Avg Insert Speed: ~7100 users/sec
+
+Benefit: Partial progress persists even if the app/network fails mid-way ✅
+
 ---
 
 ## 📚 Lessons Learned
@@ -289,18 +307,6 @@ Traditional `findAll()` approaches cause memory exhaustion. Streaming with `Stre
 **Ishan**
 
 Built with ☕ and ❤️ as a learning project to master backend engineering fundamentals.
-
----
-
-## 📝 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/Ishann17/springboot-learning-concepts).
 
 ---
 
