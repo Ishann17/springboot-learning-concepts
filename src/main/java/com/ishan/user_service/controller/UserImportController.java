@@ -9,10 +9,9 @@ import com.ishan.user_service.mapper.UserMapperFromRandomToDto;
 import com.ishan.user_service.model.User;
 import com.ishan.user_service.service.MockUserGeneratorService;
 import com.ishan.user_service.service.RandomUserClientService;
-import com.ishan.user_service.service.UserImportService;
+import com.ishan.user_service.service.user.UserImportService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -194,17 +193,27 @@ public class UserImportController {
     }
 
     @PostMapping("/import/fake")
-    public ResponseEntity<?> importMultipleUsersFakerLibrary(@RequestParam(defaultValue = "10") int count){
+    public ResponseEntity<?> importMultipleUsersFromFakerLibrary(@RequestParam(defaultValue = "10") int count){
         long startTime = System.currentTimeMillis();
-        log.info("importMultipleUsersFakerLibrary invoked with count: {}", count);
+        log.info("Users import requested via Faker. RequestedCount={}", count);
+
+        int generatedCount = 0;
+
         try {
             // STEP 1: Generate fake users using Java Faker
             List<UserDto> userDtoList = mockUserGeneratorService.generateUsers(count);
-            log.info("Generated {} fake users", userDtoList.size());
+            generatedCount = userDtoList.size();
+            log.info("Faker generation completed. GeneratedCount={}", generatedCount);
 
             // STEP 2: Save all users to database
-            userImportService.importMultipleUsersWithBatchProcessing(userDtoList);
-            log.info("Successfully saved {} users to database", userDtoList.size());
+            log.info("DB import started. TotalUsersToInsert={}", generatedCount);
+            userImportService.importMultipleUsersFromFakerWithBatchProcessing(userDtoList);
+
+            long endTime = System.currentTimeMillis();
+            double executionTimeInSeconds = (endTime - startTime) / 1000.0;
+
+            log.info("Users import SUCCESS. InsertedCount={} TotalTime={}s",
+                    generatedCount, String.format("%.2f", executionTimeInSeconds));
 
             return ResponseEntity
                     .status(HttpStatus.CREATED)
@@ -213,7 +222,7 @@ public class UserImportController {
         } finally {
             long endTime = System.currentTimeMillis();
             double executionTimeInSeconds = (endTime - startTime) / 1000.0;
-            log.info("importMultipleUsersFakerLibrary completed in {} seconds", executionTimeInSeconds);
+            log.info("Users import via Faker Library completed in {} seconds", executionTimeInSeconds);
         }
 
     }

@@ -1,4 +1,4 @@
-package com.ishan.user_service.service;
+package com.ishan.user_service.service.user;
 
 
 import com.ishan.user_service.customExceptions.UserNotFoundException;
@@ -6,20 +6,36 @@ import com.ishan.user_service.model.User;
 import com.ishan.user_service.repository.UserRepository;
 import com.ishan.user_service.specification.UserSpecification;
 import com.ishan.user_service.utility.CSVReadWriteUtility;
+import jakarta.persistence.EntityManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
 @Service
 public class UserServiceImpl implements UserService {
 
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Override
     public User createNewUser(User user) {
@@ -32,11 +48,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
     }
 
-    @Override
-    public String exportAllUsersToCSV(String path) {
-        List<User> userList = userRepository.findAll();
-        return CSVReadWriteUtility.writeCSV(userList, path);
-    }
 
     @Override
     public Page<User> searchUserByAge(int minAge, int maxAge, Pageable pageable) {
@@ -64,4 +75,7 @@ public class UserServiceImpl implements UserService {
 
         return userRepository.findAll(spec, pageable);
     }
+
 }
+
+

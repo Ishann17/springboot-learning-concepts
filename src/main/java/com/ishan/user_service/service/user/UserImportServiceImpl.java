@@ -1,15 +1,18 @@
-package com.ishan.user_service.service;
+package com.ishan.user_service.service.user;
 
 import com.ishan.user_service.dto.UserDto;
 import com.ishan.user_service.mapper.UserDtoToUserMapper;
 import com.ishan.user_service.model.User;
 import com.ishan.user_service.repository.UserRepository;
 import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +25,9 @@ public class UserImportServiceImpl implements UserImportService{
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private UserBatchSaverService userBatchSaverService;
 
     private final static Logger log = LoggerFactory.getLogger(UserImportServiceImpl.class);
 
@@ -71,8 +77,9 @@ public class UserImportServiceImpl implements UserImportService{
      * @param userDtoList - List of UserDto objects to be saved (can be millions)
      */
     @Override
-    @Transactional
-    public void importMultipleUsersWithBatchProcessing(List<UserDto> userDtoList) {
+   // @Transactional - If the whole import runs inside ONE big transaction then data is saved permanently ONLY when the method finishes.
+    public void importMultipleUsersFromFakerWithBatchProcessing(List<UserDto> userDtoList) {
+        long startTime = System.currentTimeMillis();
         // BATCH_SIZE: Number of records to process at once
         // Think: How many boxes to load in the truck per trip
         // 1,000 is optimal - not too small (many trips), not too large (memory issues)
@@ -84,6 +91,10 @@ public class UserImportServiceImpl implements UserImportService{
 
         log.info("Starting batch processing: {} total records, {} batches of {} records each",
                 userDtoList.size(), totalBatches, BATCH_SIZE);
+
+        // ✅ Extra monitoring logs (helps during 1M+ imports)
+        // Tracks speed + percentage + estimated completion behavior
+        long insertedCount = 0;
 
         // Process each batch one by one
         for (int batchNumber = 0; batchNumber < totalBatches; batchNumber++) {
@@ -104,28 +115,64 @@ public class UserImportServiceImpl implements UserImportService{
             for (UserDto userDto : currentBatch) {
                 userBatch.add(UserDtoToUserMapper.convertUserDtoToUser(userDto));
             }
+            userBatchSaverService.saveOneBatch(userBatch);
 
             // Save current batch to database
             // This saves 1,000 records in one go (much faster than one-by-one!)
-            userRepository.saveAll(userBatch);
+            //userRepository.saveAll(userBatch);
 
             // FLUSH: Force Hibernate to execute all queued SQL statements NOW
             // Without this, Hibernate might wait and batch multiple batches together
-            entityManager.flush();
+            // entityManager.flush();
 
             // CLEAR: Remove all entities from persistence context (free memory!)
             // Without this, all 2M entities would stay in memory = crash!
-            entityManager.clear();
+            //entityManager.clear();
+
+            insertedCount += userBatch.size(); // ✅ total inserted so far (last batch may be < 1000)
 
             // Log progress every 10 batches to track performance
             // Example: "Processed batch 10/2000 (10,000 records)"
+            // Log progress every 10 batches to track performance
+            // Example: "Processed batch 10/2000 (10,000 records)"
             if ((batchNumber + 1) % 10 == 0 || (batchNumber + 1) == totalBatches) {
-                log.info("Processed batch {}/{} ({} records)",
-                        batchNumber + 1, totalBatches, (batchNumber + 1) * BATCH_SIZE);
+
+                long now = System.currentTimeMillis();
+                double elapsedSeconds = (now - startTime) / 1000.0;
+
+                // ✅ Percent completion
+                double percent = userDtoList.isEmpty()
+                        ? 100.0
+                        : (insertedCount * 100.0) / userDtoList.size();
+
+                // ✅ Speed calculation (users/sec)
+                double usersPerSecond = elapsedSeconds == 0
+                        ? insertedCount
+                        : insertedCount / elapsedSeconds;
+
+                log.info("Processed batch {}/{} (Inserted={}/{} | {}% | Speed={} users/sec | Elapsed={}s)",
+                        batchNumber + 1,
+                        totalBatches,
+                        insertedCount,
+                        userDtoList.size(),
+                        String.format("%.2f", percent),
+                        String.format("%.0f", usersPerSecond),
+                        String.format("%.2f", elapsedSeconds));
             }
         }
+        long endTime = System.currentTimeMillis();
+        double totalSeconds = (endTime - startTime) / 1000.0;
 
-        log.info("Batch processing completed: {} total records saved", userDtoList.size());
+        double avgUsersPerSecond = totalSeconds == 0
+                ? insertedCount
+                : insertedCount / totalSeconds;
+
+        log.info("Batch processing completed: {} total records saved in {}s (AvgSpeed={} users/sec)",
+                userDtoList.size(),
+                String.format("%.2f", totalSeconds),
+                String.format("%.0f", avgUsersPerSecond));
     }
 
+
 }
+

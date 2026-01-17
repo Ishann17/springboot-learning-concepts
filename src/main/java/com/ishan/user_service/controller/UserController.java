@@ -2,7 +2,7 @@ package com.ishan.user_service.controller;
 
 
 import com.ishan.user_service.model.User;
-import com.ishan.user_service.service.UserService;
+import com.ishan.user_service.service.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -10,9 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import java.net.URI;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -67,12 +64,6 @@ public class UserController {
         Page<User> searchedUsers = userService.searchUsers(name, age, city, state, pageable);
 
         return ResponseEntity.ok(searchedUsers);
-    }
-
-    @GetMapping("/exportCSV")
-    public ResponseEntity<?> exportAllUsersToCSV(@RequestParam(defaultValue = "C:\\Users\\Ishan Raghav\\Downloads") String path){
-        String allUsersToCSV = userService.exportAllUsersToCSV(path);
-        return ResponseEntity.ok(allUsersToCSV);
     }
 
 }

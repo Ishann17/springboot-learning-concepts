@@ -3,6 +3,9 @@ package com.ishan.user_service.utility;
 import com.ishan.user_service.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -15,7 +18,7 @@ public class CSVReadWriteUtility {
     private static final String NEW_LINE_SEPARATOR = "\n";
     private static final String FILE_HEADER = "id,name,age,gender,city,state,email,mobile";
 
-    public static String writeCSV(List<User> userList, String path) {
+    public static Resource writeCSV(List<User> userList, String path) {
         long startTime = System.currentTimeMillis();
         String csvFileName = "AllUsersCSV.csv";
         Path csvFilePath = Paths.get(path, csvFileName);
@@ -27,7 +30,7 @@ public class CSVReadWriteUtility {
                  writer.append(NEW_LINE_SEPARATOR);
              }
             log.info("CSV Exported Successfully  file name : {} & stored at : {}",csvFileName,csvFilePath);
-            return "CSV Exported Successfully at : " + path;
+            return new FileSystemResource(csvFilePath);
         } catch (IOException e) {
             log.error("Error writing the CSV file: {}", e.getMessage());
         }finally {
@@ -35,10 +38,10 @@ public class CSVReadWriteUtility {
             double executionTimeInSeconds = (endTime - startTime) / 1000.0;
             log.info("CSV Export completed in {} seconds", executionTimeInSeconds);
         }
-        return "Issue Exporting CSV";
+        return null;
     }
 
-    private static String toCsvRow(User user){
+    public static String toCsvRow(User user){
         String id = user.getId() != null ? String.valueOf(user.getId()) : "";
         String name = user.getName() != null ? user.getName() : "";
         String age = String.valueOf(user.getAge());
@@ -47,9 +50,11 @@ public class CSVReadWriteUtility {
         String state = user.getState() != null ? user.getState() : "";
         String email = user.getEmail() != null ? user.getEmail() : "";
         String mobile = user.getMobileNumber() != null ? user.getMobileNumber() : "";
+        return String.join(",", id,name,age,gender,city,state,email,mobile);
+    }
 
-        return id + "," + name + "," + age + "," + gender + "," + city + "," + state + "," + email + "," + mobile;
-
+    public static String getCSVHeader(){
+        return FILE_HEADER+NEW_LINE_SEPARATOR;
     }
 }
 
