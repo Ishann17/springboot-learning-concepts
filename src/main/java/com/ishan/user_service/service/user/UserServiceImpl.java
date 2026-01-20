@@ -2,6 +2,8 @@ package com.ishan.user_service.service.user;
 
 
 import com.ishan.user_service.customExceptions.UserNotFoundException;
+import com.ishan.user_service.dto.UserDto;
+import com.ishan.user_service.mapper.UserDtoToUserMapper;
 import com.ishan.user_service.model.User;
 import com.ishan.user_service.repository.UserRepository;
 import com.ishan.user_service.specification.UserSpecification;
@@ -38,9 +40,9 @@ public class UserServiceImpl implements UserService {
     private EntityManager entityManager;
 
     @Override
-    public User createNewUser(User user) {
-        User save = userRepository.save(user);
-        return save;
+    public User createNewUser(UserDto userDto) {
+        User user = UserDtoToUserMapper.convertUserDtoToUser(userDto);
+        return userRepository.save(user);
     }
 
     @Override

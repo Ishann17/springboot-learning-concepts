@@ -1,6 +1,7 @@
 package com.ishan.user_service.controller;
 
 
+import com.ishan.user_service.dto.UserDto;
 import com.ishan.user_service.model.User;
 import com.ishan.user_service.service.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -19,9 +23,9 @@ public class UserController {
     private UserService userService;
 
 
-    /*@PostMapping
-    public ResponseEntity<?> createNewUser(@RequestBody User user){
-        User newUser = userService.createNewUser(user);
+    @PostMapping
+    public ResponseEntity<?> createNewUser(@RequestBody UserDto userDto){
+        User newUser = userService.createNewUser(userDto);
 
         URI location = ServletUriComponentsBuilder
                         .fromCurrentRequest()
@@ -30,7 +34,7 @@ public class UserController {
                         .toUri();
 
        return ResponseEntity.created(location).body("User Got Created !");
-    }*/
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable int id){
