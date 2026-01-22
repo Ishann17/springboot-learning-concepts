@@ -1,15 +1,16 @@
 package com.ishan.user_service.exceptionHandler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ishan.user_service.customExceptions.BatchLimitExceededException;
 import com.ishan.user_service.customExceptions.UserNotFoundException;
-import com.ishan.user_service.dto.UserDto;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -24,6 +25,8 @@ import java.util.Map;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * Inside @RestControllerAdvice, we use: @ExceptionHandler(SomeException.class) “When this exception occurs, handle it HERE.”
@@ -97,9 +100,11 @@ public class GlobalExceptionHandler {
         exception.getBindingResult().getFieldErrors().forEach(error -> {
             // error.getField() = "firstName", "email", etc.
             // error.getDefaultMessage() = the message from @NotBlank, @Size, etc.
-             fieldErrors.put(error.getField(), error.getDefaultMessage()); // overrides existing message
-            //fieldErrors.putIfAbsent(error.getField(), error.getDefaultMessage()); // keeps first/best message only
+             //fieldErrors.put(error.getField(), error.getDefaultMessage()); // overrides existing message
+            fieldErrors.putIfAbsent(error.getField(), error.getDefaultMessage()); // keeps first/best message only
         });
+
+        log.warn("[VALIDATION_FAILED] fieldErrors={}", fieldErrors);
 
         Map<String, Object> errorResponse = new LinkedHashMap<>();
         errorResponse.put("timestamp", LocalDateTime.now());
@@ -110,6 +115,21 @@ public class GlobalExceptionHandler {
 
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleUnexpectedException(Exception exception){
+
+        log.error("[UNEXPECTED_ERROR] {}", exception.getMessage(), exception);
+
+        Map<String, Object> errorResponse = new LinkedHashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        errorResponse.put("error", "Internal Server Error");
+        errorResponse.put("message", "Something went wrong");
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+
     }
 
 }

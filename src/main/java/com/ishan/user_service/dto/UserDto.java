@@ -7,14 +7,14 @@ import lombok.Data;
 @Data
 public class UserDto {
 
-    @NotBlank(message = "First Name is required")
     @Size(min = 3, message = "First Name must be at least 3 characters long")
+    @NotBlank(message = "First Name is required")
     String firstName;
 
     String lastName;
     String city;
 
-    @Min(value = 1, message = "Age must be at least 1")
+    @Min(value = 1, message = "Age must be greater or equal to 1")
     int age;
 
     @Email(message = "Email format is invalid")

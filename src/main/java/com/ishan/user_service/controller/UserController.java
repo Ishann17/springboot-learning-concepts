@@ -5,6 +5,8 @@ import com.ishan.user_service.dto.UserDto;
 import com.ishan.user_service.model.User;
 import com.ishan.user_service.service.user.UserService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +22,8 @@ import java.net.URI;
 @RequestMapping("/api/v1/users")
 public class UserController {
 
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
+
     @Autowired
     private UserService userService;
 
@@ -27,7 +31,15 @@ public class UserController {
     @PostMapping
     //@Valid meaning -> Spring, before calling my method, validate this DTO using the rules written on its fields.
     public ResponseEntity<?> createNewUser( @Valid @RequestBody UserDto userDto){
+        long startTime = System.currentTimeMillis();
+        log.info("[CREATE_USER] Request received | firstName={} age={} gender={} email={}",
+                userDto.getFirstName(), userDto.getAge(), userDto.getGender(), userDto.getEmail());
+
         User newUser = userService.createNewUser(userDto);
+
+        double timeTakenSec = (System.currentTimeMillis() - startTime) / 1000.0;
+        log.info("[CREATE_USER] Success | userId={} | timeTakenSec={}",
+                newUser.getId(), String.format("%.3f", timeTakenSec));
 
         URI location = ServletUriComponentsBuilder
                         .fromCurrentRequest()
