@@ -3,6 +3,7 @@ package com.ishan.user_service.service.job;
 import com.ishan.user_service.dto.ImportUserJobInfoDto;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -23,7 +24,7 @@ public class ImportUserJobTrackerServiceImpl implements ImportUserJobTrackerServ
                                         .requestedCount(requestedCount)
                                         .processedCount(0)
                                         .message("User Import Job Created")
-                                        .startedAt(System.currentTimeMillis())
+                                        .startedAt(LocalDateTime.now())
                                         .build();
         jobInfoDtoMap.put(jobId, jobInfo);
         return jobId;
@@ -56,7 +57,7 @@ public class ImportUserJobTrackerServiceImpl implements ImportUserJobTrackerServ
         if(Objects.nonNull(jobInfoDto)){
             jobInfoDto.setStatus(ImportUserJobInfoDto.ImportStatus.COMPLETED);
             jobInfoDto.setMessage(message);
-            jobInfoDto.setFinishedAt(System.currentTimeMillis());
+            jobInfoDto.setFinishedAt(LocalDateTime.now());
         }
     }
 
@@ -66,7 +67,7 @@ public class ImportUserJobTrackerServiceImpl implements ImportUserJobTrackerServ
         if(Objects.nonNull(jobInfoDto)){
             jobInfoDto.setStatus(ImportUserJobInfoDto.ImportStatus.FAILED);
             jobInfoDto.setMessage(errorMessage);
-            jobInfoDto.setFinishedAt(System.currentTimeMillis());
+            jobInfoDto.setFinishedAt(LocalDateTime.now());
         }
     }
 }

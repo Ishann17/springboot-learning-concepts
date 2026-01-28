@@ -34,10 +34,10 @@ public class UserImportAsyncService {
         log.info("[Async] Import started | jobId={} requestedCount={}", jobId, count);
 
         try{
-            importUserJobTrackerService.markRunning(jobId);
-
             List<UserDto> userDtoList = mockUserGeneratorService.generateUsers(count);
             log.info("[Async] Faker generation done | jobId={} generated={}", jobId, userDtoList.size());
+
+            importUserJobTrackerService.markRunning(jobId);
 
             userImportService.importMultipleUsersFromFakerWithBatchProcessing(jobId,userDtoList);
 

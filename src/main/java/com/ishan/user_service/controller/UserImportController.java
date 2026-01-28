@@ -235,7 +235,7 @@ public class UserImportController {
     @PostMapping("/import/async")
     public ResponseEntity<?> importMultipleUsersFromFakerLibraryWithAsyncJob(@RequestParam(defaultValue = "10") int count){
         String jobId = importUserJobTrackerService.createJob(count);
-        log.info("[IMPORT_USER_ASYNC] Faker import requested | jobId={} requestedCount={}", jobId, count);
+        log.info("[CREATE_USER_ASYNC] Faker import requested | jobId={} requestedCount={}", jobId, count);
 
         userImportAsyncService.runFakerImportAsync(jobId,count);
 

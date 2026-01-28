@@ -1,9 +1,12 @@
 package com.ishan.user_service.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 /**
  * Represents the status of a long-running user import job.
@@ -23,8 +26,18 @@ public class ImportUserJobInfoDto {
     long requestedCount;
     long processedCount;
     String message;
-    long startedAt;
-    long finishedAt;
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "dd-MM-yyyy HH:mm:ss",
+            timezone = "Asia/Kolkata"
+    )
+    LocalDateTime startedAt;
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "dd-MM-yyyy HH:mm:ss",
+            timezone = "Asia/Kolkata"
+    )
+    LocalDateTime finishedAt;
 
     /**
      * Possible states of an import job.
