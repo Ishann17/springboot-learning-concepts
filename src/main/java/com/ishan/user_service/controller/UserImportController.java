@@ -9,19 +9,19 @@ import com.ishan.user_service.mapper.UserMapperFromRandomToDto;
 import com.ishan.user_service.model.User;
 import com.ishan.user_service.service.MockUserGeneratorService;
 import com.ishan.user_service.service.RandomUserClientService;
+import com.ishan.user_service.service.job.ImportUserJobTrackerService;
+import com.ishan.user_service.service.user.UserImportAsyncService;
 import com.ishan.user_service.service.user.UserImportService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This controller is responsible for importing a user
@@ -46,10 +46,13 @@ public class UserImportController {
 
     private final MockUserGeneratorService mockUserGeneratorService;
 
+    private final ImportUserJobTrackerService importUserJobTrackerService;
+
+    private final UserImportAsyncService userImportAsyncService;
+
     /**
      * ObjectMapper is used to convert raw JSON text into
      * a navigable JSON tree (JsonNode).
-     *
      * We are using manual parsing instead of direct binding
      * to understand how JSON traversal actually works.
      */
@@ -62,7 +65,9 @@ public class UserImportController {
      * - Avoids field injection pitfalls
      */
     public UserImportController(UserImportService userImportService,
-                                RandomUserClientService randomUserClientService, MockUserGeneratorService mockUserGeneratorService) {
+                                RandomUserClientService randomUserClientService, MockUserGeneratorService mockUserGeneratorService, ImportUserJobTrackerService importUserJobTrackerService, UserImportAsyncService userImportAsyncService) {
+        this.importUserJobTrackerService = importUserJobTrackerService;
+        this.userImportAsyncService = userImportAsyncService;
 
         log.info("UserImportController Constructor Called");
         this.userImportService = userImportService;
@@ -196,6 +201,7 @@ public class UserImportController {
     public ResponseEntity<?> importMultipleUsersFromFakerLibrary(@RequestParam(defaultValue = "10") int count){
         long startTime = System.currentTimeMillis();
         log.info("Users import requested via Faker. RequestedCount={}", count);
+        String id ="null";
 
         int generatedCount = 0;
 
@@ -207,13 +213,12 @@ public class UserImportController {
 
             // STEP 2: Save all users to database
             log.info("DB import started. TotalUsersToInsert={}", generatedCount);
-            userImportService.importMultipleUsersFromFakerWithBatchProcessing(userDtoList);
+            userImportService.importMultipleUsersFromFakerWithBatchProcessing(id, userDtoList);
 
             long endTime = System.currentTimeMillis();
             double executionTimeInSeconds = (endTime - startTime) / 1000.0;
 
-            log.info("Users import SUCCESS. InsertedCount={} TotalTime={}s",
-                    generatedCount, String.format("%.2f", executionTimeInSeconds));
+            log.info("Users import SUCCESS. InsertedCount={}", generatedCount);
 
             return ResponseEntity
                     .status(HttpStatus.CREATED)
@@ -227,6 +232,21 @@ public class UserImportController {
 
     }
 
+    @PostMapping("/import/async")
+    public ResponseEntity<?> importMultipleUsersFromFakerLibraryWithAsyncJob(@RequestParam(defaultValue = "10") int count){
+        String jobId = importUserJobTrackerService.createJob(count);
+        log.info("[IMPORT_USER_ASYNC] Faker import requested | jobId={} requestedCount={}", jobId, count);
 
+        userImportAsyncService.runFakerImportAsync(jobId,count);
+
+        return ResponseEntity
+                .status(HttpStatus.ACCEPTED)
+                .body(Map.of(
+                        "jobId", jobId,
+                        "status", "PENDING",
+                        "message", "Import started. Use jobId to check status."
+                ));
+
+    }
 
 }

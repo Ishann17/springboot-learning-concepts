@@ -8,5 +8,5 @@ import java.util.List;
 public interface UserImportService {
     User importSingleUserFromExternalSource(UserDto userDto);
     void importMultipleUsersFromExternalSource(List<UserDto> userDtoList);
-    void importMultipleUsersFromFakerWithBatchProcessing(List<UserDto> userDtoList);
+    void importMultipleUsersFromFakerWithBatchProcessing(String jobId,List<UserDto> userDtoList);
 }

@@ -1,14 +1,14 @@
 package com.ishan.user_service.service.job;
 
-import com.ishan.user_service.dto.ImportJobStatusDto;
+import com.ishan.user_service.dto.ImportUserJobInfoDto;
 
-public interface ImportJobTrackerService {
+public interface ImportUserJobTrackerService {
 
     // Creates a new job entry and returns a unique jobId (like an orderId)
     String createJob(int requestedCount);
 
     // Fetch current job status (so client can poll)
-    ImportJobStatusDto getJobStatus(String jobId);
+    ImportUserJobInfoDto getJobStatus(String jobId);
 
     // Mark job as RUNNING
     void markRunning(String jobId);

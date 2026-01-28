@@ -4,6 +4,7 @@ import com.ishan.user_service.dto.UserDto;
 import com.ishan.user_service.mapper.UserDtoToUserMapper;
 import com.ishan.user_service.model.User;
 import com.ishan.user_service.repository.UserRepository;
+import com.ishan.user_service.service.job.ImportUserJobTrackerService;
 import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,9 @@ public class UserImportServiceImpl implements UserImportService{
 
     @Autowired
     private UserBatchSaverService userBatchSaverService;
+
+    @Autowired
+    private ImportUserJobTrackerService importUserJobTrackerService;
 
     private final static Logger log = LoggerFactory.getLogger(UserImportServiceImpl.class);
 
@@ -78,7 +82,7 @@ public class UserImportServiceImpl implements UserImportService{
      */
     @Override
    // @Transactional - If the whole import runs inside ONE big transaction then data is saved permanently ONLY when the method finishes.
-    public void importMultipleUsersFromFakerWithBatchProcessing(List<UserDto> userDtoList) {
+    public void importMultipleUsersFromFakerWithBatchProcessing(String jobId, List<UserDto> userDtoList) {
         long startTime = System.currentTimeMillis();
         // BATCH_SIZE: Number of records to process at once
         // Think: How many boxes to load in the truck per trip
@@ -129,8 +133,8 @@ public class UserImportServiceImpl implements UserImportService{
             // Without this, all 2M entities would stay in memory = crash!
             //entityManager.clear();
 
-            insertedCount += userBatch.size(); // ✅ total inserted so far (last batch may be < 1000)
-
+            insertedCount += userBatch.size(); // total inserted so far (last batch may be < 1000)
+            importUserJobTrackerService.updateProgress(jobId, insertedCount);
             // Log progress every 10 batches to track performance
             // Example: "Processed batch 10/2000 (10,000 records)"
             // Log progress every 10 batches to track performance
