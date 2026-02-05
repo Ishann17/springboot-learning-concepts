@@ -250,7 +250,7 @@ public class UserImportController {
         String jobId = importUserJobTrackerService.createJob(userId, count);
 
         //Mark Job started
-        rateLimitGuardService.markJobStarted(userId, tier);
+        rateLimitGuardService.markJobStarted(userId, jobId, tier);
 
         log.info("[CREATE_USER_ASYNC] Faker import requested | jobId={} requestedCount={}", jobId, count);
 

@@ -50,7 +50,7 @@ public class UserImportAsyncService {
             importUserJobTrackerService.markFailed(jobId, ex.getMessage());
             log.error("[Async] Import failed | jobId={}", jobId, ex);
         }finally {
-            rateLimitGuardService.markJobFinished(userId,tier);
+            rateLimitGuardService.markJobFinished(userId,jobId,tier);
             double secs = (System.currentTimeMillis() - startTime) / 1000.0;
             log.info("[Async] Import finished | jobId={} timeTakenSec={}",
                     jobId, String.format("%.2f", secs));

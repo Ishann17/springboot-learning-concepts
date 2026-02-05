@@ -1,3 +1,4 @@
+/*
 package com.ishan.user_service.component;
 
 import jakarta.annotation.PostConstruct;
@@ -20,3 +21,4 @@ public class RedisHealthCheck {
         System.out.println("Redis - Check = " + val);
     }
 }
+*/
